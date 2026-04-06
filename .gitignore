@@ -45,7 +45,8 @@ htmlcov/
 !.env.example
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/launch.json
 .idea/
 *.swp
 *.swo
@@ -64,3 +65,5 @@ logs/
 
 development/reference/fmp_database_design_report/
 *.identifier
+
+.github/

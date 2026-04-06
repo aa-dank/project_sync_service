@@ -1,0 +1,162 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        // ---------------------------------------------------------------
+        // Full sync — all entities
+        // ---------------------------------------------------------------
+        {
+            "name": "run: full sync",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["run"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        // ---------------------------------------------------------------
+        // Dry run — see diff without writing
+        // ---------------------------------------------------------------
+        {
+            "name": "run: dry run (all entities)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["run", "--dry-run"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        // ---------------------------------------------------------------
+        // Single-entity syncs
+        // ---------------------------------------------------------------
+        {
+            "name": "run: sync caans",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["run", "--entity", "caans"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        {
+            "name": "run: sync projects",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["run", "--entity", "projects"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        {
+            "name": "run: sync contracts",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["run", "--entity", "contracts"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        {
+            "name": "run: sync project-caans",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["run", "--entity", "project-caans"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        // ---------------------------------------------------------------
+        // Diagnostics
+        // ---------------------------------------------------------------
+        {
+            "name": "validate (preflight checks)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["validate"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        {
+            "name": "check (FM + PG connections)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["check"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        {
+            "name": "status",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["status"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        {
+            "name": "migrate",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["migrate"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        {
+            "name": "mappings",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "project_sync_service.cli",
+            "args": ["mappings"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        // ---------------------------------------------------------------
+        // Tests (pytest — when tests are added)
+        // ---------------------------------------------------------------
+        {
+            "name": "pytest: all tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["tests/", "-v"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": false
+        },
+        {
+            "name": "pytest: current file",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["${file}", "-v"],
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": false
+        }
+    ]
+}
