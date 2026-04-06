@@ -6,6 +6,22 @@ This document captures technical findings from analyzing the existing archives_a
 
 The existing sync lives in `archives_app/archives_application/project_tools/project_tools_tasks.py` as `fmp_caan_project_reconciliation_task()`. It runs as a background task via Redis Queue (RQ).
 
+### Shared helper module now available in this repo
+
+The repository now includes `development/reference/FMP.py`, a reusable FileMaker helper used across projects. It should be treated as a reference baseline for this build and folded into a project-local adapter (`src/project_sync_service/fm_adapter.py`) so runtime code remains packaged under `src/`.
+
+Observed capabilities from `FMP.py` worth preserving:
+- Login retry workflow with token refresh handling.
+- Explicit support for per-layout server context switching.
+- Wrapper for retrying fmrest operations with assessment hooks.
+- Configurable timeout and SSL verification controls.
+
+Refinement targets when incorporating it:
+- Remove pandas dependency from sync internals unless it provides clear value for a specific transform stage.
+- Tighten exception semantics (raise typed errors with context, not generic `Exception`).
+- Ensure retry loop covers all configured attempts.
+- Keep helper methods focused on data retrieval/update primitives needed by the sync service.
+
 ### What it currently syncs
 
 1. **CAANs**: Full two-way reconciliation. Adds CAANs present in FM but missing from PG; removes CAANs present in PG but missing from FM.
@@ -238,6 +254,7 @@ The existing sync does a full-table comparison:
   - Projects: match on `number` (project number)
   - Contracts: match on `fmp_id_primary` (FM `ID_Primary`)
   - ProjectCAANs: match on project_number + caan code pair
+- **Preflight safety checks**: Add a `project-sync validate` command to verify required layouts/fields and connectivity before migrations or scheduled runs.
 
 ### Storing FM primary keys
 
@@ -293,3 +310,4 @@ All decisions finalized:
 14. **Status field semantics**: Project status values are constrained to dropdown values `Open` and `Closed`.
 15. **Libraries**: Use `psycopg3`; do not include `sqlalchemy` or `httpx`.
 16. **Fetch limit assumption**: Use configurable `FM_FETCH_LIMIT` (default `100000`) and assume expected data volumes remain under this threshold.
+17. **Shared FM module integration**: Incorporate and harden patterns from `development/reference/FMP.py` in a project-local adapter module, keeping the design reusable across projects.

@@ -49,7 +49,9 @@ project_sync_service/
 │       ├── config.py           # Settings/config dataclass
 │       ├── mappings.py         # Load and validate field_mappings.yaml
 │       ├── fm_client.py        # FileMaker Data API client (wraps fmrest)
+│       ├── fm_adapter.py       # Typed FM adapter derived from shared FMP helper patterns
 │       ├── db.py               # PostgreSQL connection and operations (psycopg3)
+│       ├── preflight.py        # Layout/field/connectivity validation before sync
 │       ├── sync/
 │       │   ├── __init__.py
 │       │   ├── base.py         # Base sync logic (fetch, diff, upsert pattern)
@@ -76,6 +78,16 @@ project_sync_service
     ▼
 PostgreSQL (business_services_db)
 ```
+
+### FileMaker access layer strategy (shared helper integration)
+
+The repository includes `development/reference/FMP.py`, a shared FileMaker helper used across projects. This service should incorporate and harden its proven patterns (retry behavior, token/session handling, layout switching, timeout controls) in a project-local adapter module.
+
+Implementation rules:
+- Treat `development/reference/FMP.py` as the baseline implementation reference.
+- Keep runtime imports under `src/project_sync_service/` (do not import directly from `development/reference/` in production code).
+- Keep the adapter reusable so improvements can be upstreamed back into shared helper code.
+- Prefer typed Python records (dict/dataclass) in sync internals rather than pandas DataFrame dependencies.
 
 ### Sync ordering (dependency chain)
 
@@ -406,6 +418,9 @@ project-sync migrate
 
 # Show the current field mappings
 project-sync mappings
+
+# Validate FM layouts/fields and PG connectivity before first production run
+project-sync validate
 ```
 
 ### Output
@@ -424,6 +439,9 @@ Use `rich` for:
 def sync_entity(entity_config, fm_client, db_conn):
     # 1. Fetch all records from FileMaker
     fm_records = fm_client.get_all_records(entity_config.fm_layout)
+
+    # Optional: when dataset size exceeds a single FM fetch window,
+    # page at the adapter layer and return one merged record list.
 
     # 2. Apply field mappings and transforms
     mapped_records = apply_mappings(fm_records, entity_config.fields)
@@ -464,6 +482,8 @@ Contracts need special handling to resolve the FM project reference:
   - Per-entity counts (added, updated, removed, errors)
   - Any error details
 - Logging to stdout/file is sufficient for now (no PG sync_log table needed)
+- Retry transient FM/API errors with bounded attempts and clear final failure messages.
+- Include a run correlation id in log context for end-to-end traceability.
 
 ## 10. Deployment
 
@@ -498,6 +518,7 @@ Before the service can be built and run:
 3. **Verify the selected `projects` layout** includes `CampusClient` if `campus_client` sync is enabled.
 4. **Verify FM API credentials** — confirm the existing FM user account has access to all selected layouts.
 5. **PostgreSQL admin access** — needed to run migrations (add `contracts` table, alter existing tables).
+6. **Run preflight validation** — run `project-sync validate` before first production sync and after mapping/layout changes.
 
 ### Migration execution model
 
@@ -527,6 +548,7 @@ All questions have been resolved. Decisions are recorded here for reference.
 13. **Projects status source values**: Confirmed `Open` / `Closed` only (dropdown controlled).
 14. **Library set**: Use `psycopg3` and do not include `sqlalchemy` or `httpx`.
 15. **FM fetch limit**: configurable via `FM_FETCH_LIMIT` (default 100000). Assumes expected data volumes stay below this threshold.
+16. **Shared FM helper strategy**: Incorporate and further develop patterns from `development/reference/FMP.py` via a project-local `fm_adapter.py` while keeping cross-project reuse in mind.
 
 ### Data quality notes for build agent
 
