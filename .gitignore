@@ -45,8 +45,7 @@ htmlcov/
 !.env.example
 
 # IDE
-.vscode/*
-!.vscode/launch.json
+.vscode/
 .idea/
 *.swp
 *.swo
