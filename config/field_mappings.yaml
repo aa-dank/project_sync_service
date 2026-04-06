@@ -1,0 +1,167 @@
+# field_mappings.yaml
+# Authoritative FM→PG field mapping definitions for the project_sync_service.
+#
+# Each top-level key is an entity type.
+#   fm_layout:  FileMaker layout name to query
+#   pg_table:   PostgreSQL table to write to
+#   match_key:  Field(s) used to identify existing records (for upsert/diff)
+#   fields:     List of field mappings
+#     - fm:        FileMaker field name (as returned by the Data API)
+#       pg:        PostgreSQL column name
+#       transform: Optional transformation to apply (strip, boolean_yesno, boolean_closed,
+#                  integer, decimal, date)
+#
+# Special pg prefix "_" denotes lookup-only fields (used at sync time but NOT persisted).
+
+caans:
+  fm_layout: caan_table
+  pg_table: caans
+  match_key: [caan]
+  fields:
+    - fm: ID_Primary
+      pg: fmp_id_primary
+      transform: integer
+    - fm: CAAN
+      pg: caan
+      transform: strip
+    - fm: Name
+      pg: name
+      transform: strip
+    - fm: Description
+      pg: description
+      transform: strip
+    - fm: Address
+      pg: address_street
+      transform: strip
+    - fm: City
+      pg: address_city
+      transform: strip
+    - fm: Zip
+      pg: address_zip
+      transform: strip
+    - fm: Area
+      pg: area
+      transform: strip
+
+projects:
+  fm_layout: projects_table
+  pg_table: projects
+  match_key: [number]
+  fields:
+    - fm: ID_Primary
+      pg: fmp_id_primary
+      transform: integer
+    - fm: ProjectNumber
+      pg: number
+      transform: strip
+    - fm: ProjectName
+      pg: name
+      transform: strip
+    - fm: Drawings
+      pg: drawings
+      transform: boolean_yesno
+    - fm: Status
+      pg: closed
+      transform: boolean_closed   # "Closed" → True, else False
+    - fm: CampusClient
+      pg: campus_client
+      transform: strip
+
+project_caans:
+  fm_layout: caan_project_join
+  pg_table: project_caans
+  match_key: [project_number, caan]
+  fields:
+    - fm: "Projects::ProjectNumber"
+      pg: project_number          # resolved to project_id at sync time (not persisted directly)
+      transform: strip
+    - fm: CAAN
+      pg: caan                    # resolved to caan_id at sync time (not persisted directly)
+      transform: strip
+
+contracts:
+  fm_layout: Contracts            # Use existing "Contracts" layout; fall back to Import layouts if needed
+  pg_table: contracts
+  match_key: [fmp_id_primary]     # use FM ID_Primary for reliable matching
+  fields:
+    # --- System fields (required for sync infrastructure) ---
+    - fm: ID_Primary
+      pg: fmp_id_primary
+      transform: integer
+    - fm: ContractNumber
+      pg: contract_number
+      transform: integer
+    # --- Linking (lookup-only; not persisted to contracts table) ---
+    - fm: ProjectNumber
+      pg: _project_number_lookup  # underscore prefix = lookup only, not written to DB
+      transform: strip
+    # --- Dates ---
+    - fm: ContractDate
+      pg: contract_date
+      transform: date
+    - fm: StartDate
+      pg: ntp_start_date          # NTP = Notice to Proceed
+      transform: date
+    - fm: BeneficialOccupancyDate
+      pg: beneficial_occupancy_date
+      transform: date
+    - fm: SubstantialCompletionDate
+      pg: substantial_completion_date
+      transform: date
+    - fm: CertofOcc
+      pg: certificate_of_occupancy_date
+      transform: date             # NOTE: CertofOcc is Text in FM; date parser used, NULL on failure
+    - fm: CompletionDate
+      pg: noc_completion_date     # NOC = Notice of Completion
+      transform: date
+    - fm: DateRecorded
+      pg: noc_recorded_date
+      transform: date
+    - fm: TerminationDate
+      pg: termination_date
+      transform: date
+    - fm: ProjectBidDate
+      pg: bid_date
+      transform: date
+    - fm: ChangeOrdersRevisedDate
+      pg: change_order_revised_expected_end
+      transform: date             # Calculated field in FM
+    # --- Financial ---
+    - fm: Estimate
+      pg: cost_estimate
+      transform: decimal
+    - fm: OriginalCost
+      pg: original_contract_cost
+      transform: decimal
+    - fm: ChangeOrdersCostOfficial
+      pg: change_order_total
+      transform: decimal          # Calculated field in FM
+    - fm: ChangeOrdersRevisedCost
+      pg: change_order_revised_cost
+      transform: decimal          # Calculated field in FM
+    - fm: AccountNumber
+      pg: account_number
+      transform: strip
+    - fm: CFRNumber
+      pg: funding_number
+      transform: strip
+    # --- Duration ---
+    - fm: OriginalTime
+      pg: original_project_duration
+      transform: integer          # days
+    - fm: ChangeOrdersTimeOfficial
+      pg: change_order_time_total
+      transform: integer          # Calculated field in FM
+    - fm: ChangeOrdersRevisedTime
+      pg: change_order_revised_duration
+      transform: integer          # Calculated field in FM
+    # --- Parties & description ---
+    - fm: CompanyName
+      pg: contractor_org_name
+      transform: strip
+    - fm: "Contracts Architect::Company_c"
+      pg: executive_design_org_name
+      transform: strip            # RELATED FIELD via "Contracts Architect" TO; NULL if absent
+    - fm: BFDescriptionofWork
+      pg: scope_description
+      transform: strip

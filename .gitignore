@@ -25,7 +25,7 @@ ENV/
 
 # uv
 .uv/
-uv.lock
+# uv.lock is intentionally committed for reproducible installs (this is an application, not a library)
 
 # Distribution / packaging
 .Python
