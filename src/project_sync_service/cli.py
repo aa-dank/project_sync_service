@@ -180,41 +180,6 @@ def validate() -> None:
 
 
 # ---------------------------------------------------------------------------
-# migrate
-# ---------------------------------------------------------------------------
-
-@cli.command()
-def migrate() -> None:
-    """Run database migration scripts (idempotent)."""
-    cfg = _load_config_or_exit()
-    setup_logging(cfg.log_level)
-
-    migrations_dir = Path(__file__).resolve().parent / "migrations"
-    scripts = sorted(migrations_dir.glob("*.sql"))
-
-    if not scripts:
-        console.print("[yellow]No migration scripts found.[/yellow]")
-        return
-
-    db = Database(cfg.pg)
-    try:
-        db.connect()
-        for script in scripts:
-            console.print(f"  Running [cyan]{script.name}[/cyan]…", end=" ")
-            try:
-                db.run_migration_file(script)
-                console.print("[green]OK[/green]")
-            except Exception as exc:
-                console.print(f"[red]FAILED[/red]")
-                console.print(f"  [red]{exc}[/red]")
-                sys.exit(1)
-    finally:
-        db.close()
-
-    console.print("\n[bold green]Migrations complete.[/bold green]")
-
-
-# ---------------------------------------------------------------------------
 # mappings
 # ---------------------------------------------------------------------------
 
@@ -360,3 +325,7 @@ def _log_structured_summary(
         ],
     }
     logger.info("Sync complete: %s", json.dumps(summary))
+
+
+if __name__ == "__main__":
+    cli()

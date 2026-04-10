@@ -11,9 +11,6 @@ cp .env.example .env
 # Install dependencies
 uv sync
 
-# Run database migrations (creates contracts table, adds columns to projects/caans)
-uv run project-sync migrate
-
 # Validate FM layouts and PG connectivity before first sync
 uv run project-sync validate
 ```
@@ -60,9 +57,6 @@ All settings are read from environment variables (or a `.env` file in the projec
 
 `config/field_mappings.yaml` is the authoritative source for FM → PG field mappings. Edit this file to change what data flows where. Run `project-sync mappings` to inspect the current mappings.
 
-## Migrations
+## Database Schema
 
-SQL migration scripts live in `src/project_sync_service/migrations/`. They are idempotent (safe to re-run). Run with `project-sync migrate`.
-
-- `001_add_contracts_table.sql` — creates the `contracts` table
-- `002_alter_existing_tables.sql` — adds new columns to `projects` and `caans`
+This service expects the target PostgreSQL schema to already exist. Apply any required DDL changes directly with your database workflow (for example via `psql`) before running `project-sync validate` or `project-sync run`.

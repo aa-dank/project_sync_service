@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import logging
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Any, Generator
 
 import psycopg
@@ -177,11 +176,3 @@ class Database:
             cur.execute(sql, (values,))
             return cur.rowcount
 
-    def run_migration_file(self, path: Path) -> None:
-        """Execute a SQL migration script file."""
-        self.connect()
-        sql = path.read_text()
-        with self._conn.cursor() as cur:
-            cur.execute(sql)
-        self._conn.commit()
-        logger.info("Ran migration: %s", path.name)

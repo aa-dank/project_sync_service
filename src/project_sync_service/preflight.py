@@ -143,7 +143,7 @@ def _check_pg_tables(
                 result.passed.append(f"PG table '{table}': exists")
             else:
                 result.failures.append(
-                    f"PG table '{table}': NOT FOUND — run `project-sync migrate` first"
+                    f"PG table '{table}': NOT FOUND — create required tables/columns in PostgreSQL first"
                 )
         except Exception as exc:
             result.failures.append(f"PG table '{table}': ERROR checking existence — {exc}")
