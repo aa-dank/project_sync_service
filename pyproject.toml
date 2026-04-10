@@ -5,7 +5,7 @@ description = "Sync service for pulling project data from FileMaker (UCPPC) into
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "fmrest>=1.1.2",
+    "python-fmrest>=1.3.0",
     "psycopg[binary]>=3.1",
     "click>=8.1",
     "rich>=13.0",

@@ -158,5 +158,33 @@ The `project-sync mappings` command was designed to not require FM or PG credent
   - `DateRecorded` — confirm this is the correct FM field name for NOC recorded date
   - That `ChangeOrdersRevisedDate`, `ChangeOrdersCostOfficial`, `ChangeOrdersRevisedCost`, `ChangeOrdersTimeOfficial`, `ChangeOrdersRevisedTime` are all accessible on the `Contracts` layout (they're calculated fields)
   - That `Contracts Architect::Company_c` is placed on the `Contracts` layout
+
+---
+
+## Entry 002 — Remove database migration functionality
+**Date:** 2026-04-09
+**Author:** GitHub Copilot (claude-sonnet-4.6)
+
+---
+
+### What changed
+
+The built-in database migration command (`project-sync migrate`) has been removed. Database schema management is now handled externally via `psql` and is no longer a concern of this service.
+
+**Files modified:**
+
+| File | Change |
+|---|---|
+| `src/project_sync_service/cli.py` | Removed the `migrate` CLI command and its implementation |
+| `src/project_sync_service/db.py` | Removed `Database.run_migration_file()` method and unused `pathlib.Path` import |
+| `src/project_sync_service/preflight.py` | Updated missing-table failure message to remove reference to `project-sync migrate` |
+| `.vscode/launch.json` | Removed the `migrate` debug launch configuration |
+| `README.md` | Removed migrate step from setup instructions; replaced "Migrations" section with "Database Schema" note |
+
+The SQL scripts themselves (`migrations/001_add_contracts_table.sql`, `migrations/002_alter_existing_tables.sql`) are retained in the repository for historical reference.
+
+### Reason
+
+Schema changes are applied directly with `psql` as part of the deployment workflow. Running migrations through the application service added complexity without benefit and created a misleading impression that the service was responsible for schema ownership.
 - **First production run** — run `project-sync validate` before first live sync to confirm layout field availability.
 - **ContractAmendments / ContractSubContracts** — out of scope for this version; can be added as `sync/contract_amendments.py` etc. following the same pattern.
