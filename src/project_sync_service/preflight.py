@@ -113,17 +113,24 @@ def _check_fm_fields(
         if field_map.fm in actual_fields:
             pass  # present and confirmed
         else:
+            severity = "critical" if field_map.critical else "optional"
             # Related fields (containing "::") may be legitimately absent if relation has no match
             if "::" in field_map.fm:
                 result.warnings.append(
-                    f"  [{entity_name}] Related field '{field_map.fm}' absent from sample record — "
-                    f"may be a layout placement issue or empty relation (NULL will be used)."
+                    f"  [{entity_name}] {severity.capitalize()} related field '{field_map.fm}' absent from sample record — "
+                    f"may be a layout placement issue or empty relation."
                 )
             else:
-                result.failures.append(
-                    f"  [{entity_name}] Required FM field '{field_map.fm}' NOT found in layout "
-                    f"'{entity.fm_layout}' — add it to the layout or update the mapping."
-                )
+                if field_map.critical:
+                    result.failures.append(
+                        f"  [{entity_name}] Critical FM field '{field_map.fm}' NOT found in layout "
+                        f"'{entity.fm_layout}' — sync for this entity should be blocked."
+                    )
+                else:
+                    result.warnings.append(
+                        f"  [{entity_name}] Optional FM field '{field_map.fm}' not found in layout "
+                        f"'{entity.fm_layout}' — existing PG values will be preserved."
+                    )
 
 
 def _check_pg_tables(

@@ -12,8 +12,8 @@ import logging
 
 from ..db import Database
 from ..fm_adapter import FileMakerAdapter
-from ..mappings import EntityMapping
-from .base import SyncResult, compute_diff, fetch_and_map
+from ..mappings import EntityMapping, MISSING, apply_mappings
+from .base import SyncResult, compute_diff
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,22 @@ def sync_contracts(
 ) -> SyncResult:
     result = SyncResult(entity="contracts")
 
-    fm_records = fetch_and_map(fm, entity, fetch_limit)
+    raw_records = fm.get_records(entity.fm_layout, limit=fetch_limit)
+    available_fields = set(raw_records[0].keys()) if raw_records else set()
+
+    critical_fm_fields = {f.fm for f in entity.critical_fields}
+    missing_critical = sorted(f for f in critical_fm_fields if f not in available_fields)
+    if missing_critical:
+        message = (
+            "Contracts sync skipped: missing critical FM fields in layout "
+            f"'{entity.fm_layout}': {', '.join(missing_critical)}"
+        )
+        logger.error(message)
+        result.errors = 1
+        result.error_details.append(message)
+        return result
+
+    fm_records = apply_mappings(raw_records, entity)
 
     # Build project number → PG project id lookup table
     project_lookup = _build_project_lookup(db)
@@ -82,7 +97,20 @@ def sync_contracts(
     if unresolved_count:
         logger.warning("Total unresolved contract→project references: %d", unresolved_count)
 
-    pg_records = db.get_all("contracts", columns=["id", "fmp_id_primary", "contract_number", "project_id"])
+    pg_records = db.get_all("contracts", columns=["id"] + PERSIST_COLUMNS)
+
+    existing_by_fmp_id = {
+        row["fmp_id_primary"]: row
+        for row in pg_records
+        if row.get("fmp_id_primary") is not None
+    }
+
+    for record in fm_records:
+        fmp_id = record.get("fmp_id_primary")
+        existing = existing_by_fmp_id.get(fmp_id)
+        for col in PERSIST_COLUMNS:
+            if record.get(col, MISSING) is MISSING:
+                record[col] = existing.get(col) if existing else None
 
     # Diff using fmp_id_primary as the stable match key
     to_add, to_update, to_remove = compute_diff(
@@ -131,4 +159,4 @@ def _build_project_lookup(db: Database) -> dict[str, int]:
 
 
 def _prepare_record(r: dict) -> dict:
-    return {c: r.get(c) for c in PERSIST_COLUMNS}
+    return {c: (None if r.get(c, MISSING) is MISSING else r.get(c)) for c in PERSIST_COLUMNS}

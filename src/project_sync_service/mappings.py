@@ -15,6 +15,10 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
+# Sentinel used when an FM field is absent from a layout response.
+MISSING = object()
+
+
 # ---------------------------------------------------------------------------
 # Transform functions
 # ---------------------------------------------------------------------------
@@ -104,6 +108,7 @@ class FieldMapping:
     fm: str
     pg: str
     transform: str | None = None
+    critical: bool = False
 
     @property
     def is_lookup_only(self) -> bool:
@@ -137,6 +142,10 @@ class EntityMapping:
     def lookup_fields(self) -> list[FieldMapping]:
         return [f for f in self.fields if f.is_lookup_only]
 
+    @property
+    def critical_fields(self) -> list[FieldMapping]:
+        return [f for f in self.fields if f.critical]
+
 
 # ---------------------------------------------------------------------------
 # Loader
@@ -154,6 +163,7 @@ def load_mappings(path: Path) -> dict[str, EntityMapping]:
                 fm=str(f["fm"]),
                 pg=str(f["pg"]),
                 transform=f.get("transform"),
+                critical=bool(f.get("critical", False)),
             )
             for f in entity_data.get("fields", [])
         ]
@@ -176,7 +186,10 @@ def apply_mappings(fm_records: list[dict], entity: EntityMapping) -> list[dict]:
     for fm_record in fm_records:
         pg_record: dict[str, Any] = {}
         for field_map in entity.fields:
-            raw_value = fm_record.get(field_map.fm)  # None if field absent (e.g. related field not on layout)
+            if field_map.fm not in fm_record:
+                pg_record[field_map.pg] = MISSING
+                continue
+            raw_value = fm_record.get(field_map.fm)
             pg_record[field_map.pg] = field_map.apply(raw_value)
         result.append(pg_record)
     return result

@@ -63,9 +63,6 @@ projects:
     - fm: Status
       pg: closed
       transform: boolean_closed   # "Closed" → True, else False
-    - fm: CampusClient
-      pg: campus_client
-      transform: strip
 
 project_caans:
   fm_layout: caan_project_join
@@ -80,7 +77,7 @@ project_caans:
       transform: strip
 
 contracts:
-  fm_layout: Contracts            # Use existing "Contracts" layout; fall back to Import layouts if needed
+  fm_layout: ImportContracts
   pg_table: contracts
   match_key: [fmp_id_primary]     # use FM ID_Primary for reliable matching
   fields:
@@ -88,13 +85,16 @@ contracts:
     - fm: ID_Primary
       pg: fmp_id_primary
       transform: integer
+      critical: true
     - fm: ContractNumber
       pg: contract_number
       transform: integer
+      critical: true
     # --- Linking (lookup-only; not persisted to contracts table) ---
     - fm: ProjectNumber
       pg: _project_number_lookup  # underscore prefix = lookup only, not written to DB
       transform: strip
+      critical: true
     # --- Dates ---
     - fm: ContractDate
       pg: contract_date

@@ -188,3 +188,35 @@ The SQL scripts themselves (`migrations/001_add_contracts_table.sql`, `migration
 Schema changes are applied directly with `psql` as part of the deployment workflow. Running migrations through the application service added complexity without benefit and created a misleading impression that the service was responsible for schema ownership.
 - **First production run** — run `project-sync validate` before first live sync to confirm layout field availability.
 - **ContractAmendments / ContractSubContracts** — out of scope for this version; can be added as `sync/contract_amendments.py` etc. following the same pattern.
+
+---
+
+## Entry 003 — Resilient handling for missing layout fields
+**Date:** 2026-04-23
+**Author:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+### What changed
+
+Contracts sync and preflight were updated so the service no longer assumes every mapped field is always present on the configured FileMaker layout.
+
+**Behavior now:**
+
+- Fields can be marked `critical: true` in `config/field_mappings.yaml`.
+- Missing **critical** fields block that entity sync (for contracts: skip writes and log an error).
+- Missing **optional** fields do not fail sync; existing PostgreSQL values are preserved.
+- Preflight reports missing optional fields as warnings and missing critical fields as failures.
+
+### Files updated
+
+| File | Change |
+|---|---|
+| `config/field_mappings.yaml` | Marked contracts `ID_Primary`, `ContractNumber`, and `ProjectNumber` as `critical: true` |
+| `src/project_sync_service/mappings.py` | Added `critical` flag support and a `MISSING` sentinel for absent FM fields |
+| `src/project_sync_service/preflight.py` | Missing-field checks now differentiate critical failures vs optional warnings |
+| `src/project_sync_service/sync/contracts.py` | Added runtime critical-field gate and preservation of existing DB values for missing optional fields |
+
+### Why this matters
+
+This prevents accidental data loss when a layout temporarily omits non-critical fields. Previously, absent fields could be interpreted as `None` and overwrite populated values in PostgreSQL.
