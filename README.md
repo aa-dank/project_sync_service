@@ -60,3 +60,5 @@ All settings are read from environment variables (or a `.env` file in the projec
 ## Database Schema
 
 This service expects the target PostgreSQL schema to already exist. Apply any required DDL changes directly with your database workflow (for example via `psql`) before running `project-sync validate` or `project-sync run`.
+
+Migration scripts live in `src/project_sync_service/migrations/`. Apply them in numeric order. In particular, `003_add_sync_business_key_constraints.sql` adds the unique index required by the CAAN sync upsert on `caans.caan`.

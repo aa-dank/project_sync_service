@@ -48,6 +48,9 @@ def run_preflight(
     # 4. PostgreSQL table existence
     _check_pg_tables(db, mappings, result)
 
+    # 5. PostgreSQL upsert constraints
+    _check_pg_upsert_constraints(db, result)
+
     return result
 
 
@@ -154,3 +157,49 @@ def _check_pg_tables(
                 )
         except Exception as exc:
             result.failures.append(f"PG table '{table}': ERROR checking existence — {exc}")
+
+
+def _check_pg_upsert_constraints(db: Database, result: ValidationResult) -> None:
+    """Verify unique indexes required by INSERT ... ON CONFLICT targets."""
+    required_indexes = {
+        "caans": "caan",
+        "contracts": "fmp_id_primary",
+    }
+
+    for table, column in required_indexes.items():
+        try:
+            row = db.fetchone(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_index idx
+                    JOIN pg_class tbl ON tbl.oid = idx.indrelid
+                    JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+                    WHERE ns.nspname = 'public'
+                      AND tbl.relname = %s
+                      AND idx.indisunique
+                      AND idx.indpred IS NULL
+                      AND idx.indkey::text = (
+                          SELECT att.attnum::text
+                          FROM pg_attribute att
+                          WHERE att.attrelid = tbl.oid
+                            AND att.attname = %s
+                            AND NOT att.attisdropped
+                      )
+                ) AS has_index
+                """,
+                (table, column),
+            )
+            if row and row["has_index"]:
+                result.passed.append(
+                    f"PG table '{table}': unique index on ({column}) exists"
+                )
+            else:
+                result.failures.append(
+                    f"PG table '{table}': missing unique index on ({column}) "
+                    "required for sync upsert"
+                )
+        except Exception as exc:
+            result.failures.append(
+                f"PG table '{table}': ERROR checking unique index on ({column}) — {exc}"
+            )

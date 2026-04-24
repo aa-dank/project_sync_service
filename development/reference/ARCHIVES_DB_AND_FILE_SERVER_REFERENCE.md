@@ -126,7 +126,7 @@ Campus buildings/facilities. "CAAN" is a campus asset/account number. This is th
 | Column | Type | Description |
 |---|---|---|
 | id | integer (PK) | Auto-increment ID |
-| caan | varchar | CAAN code (e.g., "7115", "G144", "P101") |
+| caan | varchar (UNIQUE) | CAAN code (e.g., "7115", "G144", "P101"); sync business key |
 | name | varchar | Building/facility name (e.g., "Hahn Student Services") |
 | description | varchar | Additional description |
 

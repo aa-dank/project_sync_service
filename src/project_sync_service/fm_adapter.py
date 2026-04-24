@@ -132,6 +132,7 @@ class FileMakerAdapter:
                 layout=layout_name,
                 api_version=self._config.api_version,
                 verify_ssl=self._config.verify_ssl,
+                timeout=self._config.timeout,
             )
             fmrest.utils.TIMEOUT = self._config.timeout
             self._login()
