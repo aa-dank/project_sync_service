@@ -46,11 +46,12 @@ caans:
 projects:
   fm_layout: projects_table
   pg_table: projects
-  match_key: [number]
+  match_key: [fmp_id_primary]
   fields:
     - fm: ID_Primary
       pg: fmp_id_primary
       transform: integer
+      critical: true
     - fm: ProjectNumber
       pg: number
       transform: strip

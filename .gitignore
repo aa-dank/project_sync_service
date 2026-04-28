@@ -67,3 +67,4 @@ development/reference/fmp_database_design_report/
 *.identifier
 
 .github/
+development/local/

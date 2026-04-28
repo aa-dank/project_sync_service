@@ -120,7 +120,8 @@ class Database:
     ) -> int:
         """
         INSERT … ON CONFLICT (conflict_columns) DO UPDATE SET …
-        extra_set: additional SET clauses expressed as {column: sql_expr} (e.g. last_synced_at).
+        extra_set: additional INSERT values and SET clauses expressed as
+        {column: sql_expr} (e.g. last_synced_at).
         Returns number of rows affected.
         """
         if not records:
@@ -128,8 +129,16 @@ class Database:
 
         self.connect()
         cols = list(records[0].keys())
-        col_names = ", ".join(cols)
-        placeholders = ", ".join(f"%({c})s" for c in cols)
+        insert_cols = list(cols)
+        value_exprs = [f"%({c})s" for c in cols]
+        if extra_set:
+            for col, expr in extra_set.items():
+                if col not in insert_cols:
+                    insert_cols.append(col)
+                    value_exprs.append(expr)
+
+        col_names = ", ".join(insert_cols)
+        placeholders = ", ".join(value_exprs)
         conflict_target = ", ".join(conflict_columns)
 
         set_clauses = [f"{c} = EXCLUDED.{c}" for c in update_columns]
@@ -175,4 +184,3 @@ class Database:
         with self._conn.cursor() as cur:
             cur.execute(sql, (values,))
             return cur.rowcount
-

@@ -220,3 +220,116 @@ Contracts sync and preflight were updated so the service no longer assumes every
 ### Why this matters
 
 This prevents accidental data loss when a layout temporarily omits non-critical fields. Previously, absent fields could be interpreted as `None` and overwrite populated values in PostgreSQL.
+
+---
+
+## Entry 004 — Production sync hardening and project identity backfill
+**Date:** 2026-04-24
+**Author:** OpenAI Codex (GPT-5)
+
+---
+
+### What changed
+
+This session addressed early production sync failures observed while running individual entity syncs against FileMaker and PostgreSQL.
+
+**Files added/updated:**
+
+| File | Change |
+|---|---|
+| `src/project_sync_service/fm_adapter.py` | Passed configured `FM_TIMEOUT` directly into `fmrest.Server`; the prior module-level timeout assignment did not affect `Server.timeout`, so calls still timed out at 10 seconds. |
+| `src/project_sync_service/migrations/003_add_sync_business_key_constraints.sql` | Added an idempotent unique index for `caans.caan`, required by `ON CONFLICT (caan)`. |
+| `src/project_sync_service/preflight.py` | Added validation for required unique indexes used by sync upserts. |
+| `src/project_sync_service/db.py` | Fixed `bulk_upsert()` so `extra_set` SQL expressions such as `last_synced_at = NOW()` apply to inserted rows as well as updated rows. |
+| `development/reference/ARCHIVES_DB_AND_FILE_SERVER_REFERENCE.md` | Documented `caans.caan` as unique and as the CAAN sync business key. |
+| `development/backfill_project_fmp_ids.py` | Added a dry-run-first development helper to backfill `projects.fmp_id_primary` from FileMaker using unique `(project number, project name)` matches. |
+| `.gitignore` | Ignored local `.codex` tool state. |
+| `AGENTS.md` | Added operational notes about sync identity keys and the project backfill workflow. |
+
+### Live database changes
+
+A duplicate check found no duplicate `caans.caan` values, then the following unique index was applied to the live PostgreSQL database:
+
+```sql
+CREATE UNIQUE INDEX idx_caans_caan_unique ON public.caans USING btree (caan);
+```
+
+The CAAN sync subsequently completed successfully with `+126 ~1214 -1`.
+
+### Project identity findings
+
+The projects sync still failed because it currently uses:
+
+```sql
+ON CONFLICT (number)
+```
+
+PostgreSQL cannot support that without a unique constraint, and `projects.number` is not unique. Inspection found duplicate project numbers in PostgreSQL, and the user confirmed many corresponding duplicates are also present in FileMaker. Therefore, do **not** add a unique constraint on `projects.number`.
+
+The intended path is to use `projects.fmp_id_primary` as the transitional sync key while FileMaker remains authoritative. This field was recently added, so existing project rows need a backfill before project sync can safely switch to that key.
+
+### Backfill dry-run results
+
+The new development helper was run in dry-run mode:
+
+```text
+FM projects fetched: 10038
+PG projects fetched: 9708
+Unambiguous updates ready: 9659
+Duplicate FM (number, name) keys: 3
+Duplicate PG (number, name) keys: 10
+PG rows without FM match: 28
+PG rows skipped because fmp_id_primary is already set: 0
+Rows skipped because FM ID is assigned elsewhere: 0
+```
+
+This means most `projects.fmp_id_primary` values can be filled automatically by matching normalized `(ProjectNumber, ProjectName)` to `(projects.number, projects.name)`, while a small set remains for manual review.
+
+### Follow-on work
+
+- Run `development/backfill_project_fmp_ids.py --apply` after reviewing the dry-run output.
+- Manually resolve duplicate/unmatched project rows and fill remaining `fmp_id_primary` values.
+- Change project sync from `number` matching to `fmp_id_primary` matching once backfill coverage is sufficient.
+- Revisit `project_caans`: it currently resolves projects by project number, which is ambiguous when project numbers are duplicated. Prefer FileMaker project ID resolution if the join layout exposes it.
+
+---
+
+## Entry 005 — Project identity cutover and dry-run reconciliation
+**Date:** 2026-04-27
+**Author:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+### What changed
+
+This session completed the practical transition of project sync identity from project number to FileMaker primary ID, and reconciled the resulting dry-run differences.
+
+**Work completed:**
+
+- Applied the project `fmp_id_primary` backfill workflow to populate existing PostgreSQL project rows where safe to do so.
+- Updated project sync matching/upsert/delete behavior to use `fmp_id_primary` rather than `number`.
+- Updated mapping configuration so projects match on `fmp_id_primary`.
+- Ran dry-run sync for projects to inspect post-cutover behavior.
+
+### Dry-run outcomes after cutover
+
+Projects dry-run reported approximately:
+
+- `+334` adds
+- `~9698` updates
+- `-2` removes
+
+Follow-up investigation showed the add/remove set is expected and not a sync bug:
+
+- Most adds are valid FileMaker projects not previously present in PostgreSQL under the old number-based flow.
+- The two removals are stale PostgreSQL rows whose `fmp_id_primary` values no longer map to current FileMaker records.
+
+### Key historical finding (legacy ingestion behavior)
+
+The original legacy project scrape in the older archives app filtered FileMaker projects using a project-number regex that required project numbers to begin with digits.
+
+That legacy filter excluded `FTO-*` project numbers (letter-prefixed), which explains why many Fort Ord / MBEST projects were absent from PostgreSQL before this cutover.
+
+### Why this matters
+
+This establishes `projects.fmp_id_primary` as the reliable sync identity and removes dependence on non-unique human-facing project numbers. It also explains and validates the observed influx of previously missing historical records during reconciliation.

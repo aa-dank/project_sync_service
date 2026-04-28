@@ -24,7 +24,6 @@ UPDATE_COLUMNS = [
     "name",
     "drawings",
     "closed",
-    "fmp_id_primary",
 ]
 
 
@@ -46,7 +45,7 @@ def sync_projects(
     to_add, to_update, to_remove = compute_diff(
         fm_data=fm_records,
         pg_data=pg_records,
-        match_keys=entity.match_key,   # [number]
+        match_keys=entity.match_key,   # [fmp_id_primary]
     )
 
     logger.info("Projects diff: +%d ~%d -%d", len(to_add), len(to_update), len(to_remove))
@@ -63,13 +62,13 @@ def sync_projects(
             db.bulk_upsert(
                 table="projects",
                 records=upsert_records,
-                conflict_columns=["number"],
+                conflict_columns=["fmp_id_primary"],
                 update_columns=UPDATE_COLUMNS,
                 extra_set={"last_synced_at": "NOW()"},
             )
 
         if to_remove:
-            db.bulk_delete("projects", to_remove, match_column="number")
+            db.bulk_delete("projects", to_remove, match_column="fmp_id_primary")
 
     result.added = len(to_add)
     result.updated = len(to_update)
