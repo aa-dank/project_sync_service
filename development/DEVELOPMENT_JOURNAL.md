@@ -333,3 +333,67 @@ That legacy filter excluded `FTO-*` project numbers (letter-prefixed), which exp
 ### Why this matters
 
 This establishes `projects.fmp_id_primary` as the reliable sync identity and removes dependence on non-unique human-facing project numbers. It also explains and validates the observed influx of previously missing historical records during reconciliation.
+
+---
+
+## Entry 006 — Contracts project-linking refactor and contract data audit
+**Date:** 2026-05-01
+**Author:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+### What changed
+
+This session refactored contract-to-project resolution to use FileMaker relationship IDs directly, then validated behavior with dry-run syncs and a contract data audit workbook.
+
+### Files updated
+
+| File | Change |
+|---|---|
+| `config/field_mappings.yaml` | Contracts linking mappings changed from `ProjectNumber` to `ID_Projects` (primary) and `ProjectNumber_lk` (fallback). |
+| `src/project_sync_service/sync/contracts.py` | Resolution logic now attempts `ID_Projects -> projects.fmp_id_primary` first, then falls back to `ProjectNumber_lk -> projects.number`, with explicit fallback/unresolved logging. |
+| `development/reference/all_contracts.xlsx` | Added as a reference export used to profile available contracts linkage fields. |
+
+### Contracts linking strategy (new)
+
+- Primary resolver: `Contracts.ID_Projects` mapped as lookup-only `_project_fmp_id_lookup`.
+- Fallback resolver: `Contracts.ProjectNumber_lk` mapped as lookup-only `_project_number_lookup`.
+- If both fail, `contracts.project_id` is set to `NULL` and logged as unresolved.
+
+This removes dependency on `Contracts.ProjectNumber`, which was observed as blank in the provided contracts export.
+
+### Validation and observed results
+
+`contracts` dry-run completed successfully after the change.
+
+Observed runtime summary from dry-run:
+
+- Total contracts fetched: `5696`
+- Resolved via fallback (`ProjectNumber_lk`): `4`
+- Unresolved after both lookup paths: `4`
+- Entity-level sync errors: `0`
+
+### Data audit findings from `all_contracts.xlsx`
+
+Profiling of the contracts export showed:
+
+- `ProjectNumber`: blank for all rows (`0/5696` populated)
+- `ProjectNumber_lk`: populated for all rows (`5696/5696`)
+- `ID_Projects`: populated for all rows (`5696/5696`)
+
+Cross-check against current PostgreSQL projects data indicated:
+
+- `ProjectNumber_lk -> projects.number`: `4437` matched, including ambiguous duplicates and many misses.
+- `ID_Projects -> projects.fmp_id_primary`: `5688` matched, `8` not found.
+
+These findings supported promoting `ID_Projects` to primary resolver and keeping `ProjectNumber_lk` as a fallback only.
+
+### Other repository changes observed since last entry
+
+The `src/project_sync_service/migrations/` SQL files are currently marked as removed in git status:
+
+- `001_add_contracts_table.sql`
+- `002_alter_existing_tables.sql`
+- `003_add_sync_business_key_constraints.sql`
+
+These deletions were observed in the workspace during this session and should be reviewed before commit if migration/reference artifacts are intended to remain in-repo.

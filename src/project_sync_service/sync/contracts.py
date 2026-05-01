@@ -2,7 +2,8 @@
 Contract sync: syncs contracts table from FileMaker Contracts layout.
 
 Special logic:
-- _project_number_lookup is used to resolve contracts.project_id via projects.number
+- _project_fmp_id_lookup is used first to resolve contracts.project_id via projects.fmp_id_primary
+- _project_number_lookup is used as a fallback resolver via projects.number
 - ProjectNumber is NOT persisted in the contracts table
 - Missing project references → project_id = NULL (with warning)
 """
@@ -74,26 +75,43 @@ def sync_contracts(
 
     fm_records = apply_mappings(raw_records, entity)
 
-    # Build project number → PG project id lookup table
-    project_lookup = _build_project_lookup(db)
+    # Build project lookup tables
+    project_lookup_by_fmp_id, project_lookup_by_number = _build_project_lookups(db)
 
     # Resolve project_id for each contract record
     unresolved_count = 0
+    fallback_count = 0
     for record in fm_records:
-        proj_num_raw = record.get("_project_number_lookup")
-        proj_num = str(proj_num_raw).strip() if proj_num_raw is not None else None
-        if proj_num and proj_num in project_lookup:
-            record["project_id"] = project_lookup[proj_num]
-        else:
-            if proj_num:
-                unresolved_count += 1
-                logger.warning(
-                    "Contract fmp_id_primary=%s references project '%s' not found in PG; setting project_id=NULL.",
-                    record.get("fmp_id_primary"),
-                    proj_num,
-                )
-            record["project_id"] = None
+        project_fmp_id = record.get("_project_fmp_id_lookup")
+        project_number_raw = record.get("_project_number_lookup")
+        project_number = str(project_number_raw).strip() if project_number_raw is not None else None
 
+        if project_fmp_id is not None and project_fmp_id in project_lookup_by_fmp_id:
+            record["project_id"] = project_lookup_by_fmp_id[project_fmp_id]
+            continue
+
+        if project_number and project_number in project_lookup_by_number:
+            fallback_count += 1
+            record["project_id"] = project_lookup_by_number[project_number]
+            logger.warning(
+                "Contract fmp_id_primary=%s could not resolve by ID_Projects=%s; used ProjectNumber_lk='%s' fallback.",
+                record.get("fmp_id_primary"),
+                project_fmp_id,
+                project_number,
+            )
+            continue
+
+        unresolved_count += 1
+        logger.warning(
+            "Contract fmp_id_primary=%s could not resolve project (ID_Projects=%s, ProjectNumber_lk='%s'); setting project_id=NULL.",
+            record.get("fmp_id_primary"),
+            project_fmp_id,
+            project_number,
+        )
+        record["project_id"] = None
+
+    if fallback_count:
+        logger.warning("Total contract→project resolutions using ProjectNumber_lk fallback: %d", fallback_count)
     if unresolved_count:
         logger.warning("Total unresolved contract→project references: %d", unresolved_count)
 
@@ -147,15 +165,21 @@ def sync_contracts(
     return result
 
 
-def _build_project_lookup(db: Database) -> dict[str, int]:
-    """Return a mapping of project number (string) → PG projects.id."""
-    rows = db.get_all("projects", columns=["id", "number"])
-    lookup: dict[str, int] = {}
+def _build_project_lookups(db: Database) -> tuple[dict[int, int], dict[str, int]]:
+    """Return mappings for project resolution by FM ID and by project number."""
+    rows = db.get_all("projects", columns=["id", "number", "fmp_id_primary"])
+    lookup_by_fmp_id: dict[int, int] = {}
+    lookup_by_number: dict[str, int] = {}
     for row in rows:
+        fmp_id = row.get("fmp_id_primary")
+        if fmp_id is not None:
+            lookup_by_fmp_id[int(fmp_id)] = row["id"]
+
         num = str(row["number"]).strip() if row["number"] else None
         if num:
-            lookup[num] = row["id"]
-    return lookup
+            lookup_by_number[num] = row["id"]
+
+    return lookup_by_fmp_id, lookup_by_number
 
 
 def _prepare_record(r: dict) -> dict:
