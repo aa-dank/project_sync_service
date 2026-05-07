@@ -214,12 +214,10 @@ Extracted text and vector embeddings for files. Populated by the nightly archive
 | source_text | text | Extracted text content |
 | minilm_model | text | Embedding model name (default: "all-MiniLM-L6-v2") |
 | minilm_emb | vector | MiniLM embedding vector (binary, pgvector type) |
-| mpnet_model | text | Optional second embedding model name |
-| mpnet_emb | vector | Optional second embedding vector |
 | text_length | integer | Character count of source_text |
 | updated_at | timestamptz | When content was last extracted |
 
-IVFFlat indexes exist on `minilm_emb` and `mpnet_emb` for vector similarity search.
+IVFFlat indexes exist on `minilm_emb` for vector similarity search.
 
 #### `file_content_failures` (4,395 rows)
 Tracks files that failed text extraction or embedding (to avoid retrying endlessly).
