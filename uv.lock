@@ -3,6 +3,15 @@ revision = 3
 requires-python = ">=3.11"
 
 [[package]]
+name = "bs-fmp-sdk"
+version = "0.1.0"
+source = { git = "https://github.com/aa-dank/bs_fmp_sdk.git?rev=e4c12a04f3d944ea365733f998625c5a9f4b20c9#e4c12a04f3d944ea365733f998625c5a9f4b20c9" }
+dependencies = [
+    { name = "python-dotenv" },
+    { name = "python-fmrest" },
+]
+
+[[package]]
 name = "certifi"
 version = "2026.2.25"
 source = { registry = "https://pypi.org/simple" }
@@ -156,22 +165,22 @@ name = "project-sync-service"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "bs-fmp-sdk" },
     { name = "click" },
     { name = "psycopg", extra = ["binary"] },
     { name = "python-dateutil" },
     { name = "python-dotenv" },
-    { name = "python-fmrest" },
     { name = "pyyaml" },
     { name = "rich" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "bs-fmp-sdk", git = "https://github.com/aa-dank/bs_fmp_sdk.git?rev=e4c12a04f3d944ea365733f998625c5a9f4b20c9" },
     { name = "click", specifier = ">=8.1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.1" },
     { name = "python-dateutil", specifier = ">=2.8" },
     { name = "python-dotenv", specifier = ">=1.0" },
-    { name = "python-fmrest", specifier = ">=1.3.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.0" },
 ]

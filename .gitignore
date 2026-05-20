@@ -68,3 +68,5 @@ development/reference/fmp_database_design_report/
 
 .github/
 development/local/
+
+*.bak

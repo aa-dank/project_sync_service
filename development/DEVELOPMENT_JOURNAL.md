@@ -397,3 +397,29 @@ The `src/project_sync_service/migrations/` SQL files are currently marked as rem
 - `003_add_sync_business_key_constraints.sql`
 
 These deletions were observed in the workspace during this session and should be reviewed before commit if migration/reference artifacts are intended to remain in-repo.
+
+---
+
+## Entry 007 — FileMaker SDK integration
+**Date:** 2026-05-20
+**Author:** Codex
+
+---
+
+### What changed
+
+This session replaced the project-local FileMaker Data API implementation with the shared `bs_fmp_sdk` package while preserving the existing sync service adapter interface.
+
+### Files updated
+
+| File | Change |
+|---|---|
+| `pyproject.toml` | Replaced direct `python-fmrest` dependency with pinned Git dependency on `bs-fmp-sdk`; enabled Hatch direct references. |
+| `uv.lock` | Locked `bs-fmp-sdk` from `aa-dank/bs_fmp_sdk` at commit `e4c12a04f3d944ea365733f998625c5a9f4b20c9`. |
+| `src/project_sync_service/fm_adapter.py` | Converted to a compatibility wrapper around `bs_fmp_sdk.FileMakerClient`, keeping `get_records`, `ping`, `check_layout`, `logout`, and context-manager behavior stable. |
+
+### Validation
+
+- Imported `FileMakerAdapter` and SDK-backed exception classes successfully.
+- Compiled `src/project_sync_service`.
+- Ran `project-sync mappings` successfully without credentials.
