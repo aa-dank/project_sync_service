@@ -2,8 +2,8 @@
 Project-CAAN join sync: syncs project_caans many-to-many table.
 
 FM source fields:
-  Projects::ProjectNumber → project_number (resolved to project_id)
-  CAAN                    → caan          (resolved to caan_id)
+    ID_Project → project_fmp_id (resolved to project_id via projects.fmp_id_primary)
+    CAAN       → caan           (resolved to caan_id)
 
 PG target table: project_caans (project_id, caan_id) — composite PK
 """
@@ -38,23 +38,23 @@ def sync_project_caans(
     resolved: list[dict] = []
     unresolved = 0
     for record in fm_records:
-        proj_num = str(record.get("project_number", "") or "").strip()
+        project_fmp_id = record.get("project_fmp_id")
         caan_code = str(record.get("caan", "") or "").strip()
 
-        project_id = project_lookup.get(proj_num)
+        project_id = project_lookup.get(project_fmp_id)
         caan_id = caan_lookup.get(caan_code)
 
         if not project_id or not caan_id:
             unresolved += 1
             logger.debug(
-                "Skipping project_caan: project_number='%s' caan='%s' — unresolvable.",
-                proj_num, caan_code,
+                "Skipping project_caan: project_fmp_id='%s' caan='%s' — unresolvable.",
+                project_fmp_id,
+                caan_code,
             )
             continue
 
         resolved.append({
-            "project_number": proj_num,
-            "caan": caan_code,
+            "project_fmp_id": project_fmp_id,
             "project_id": project_id,
             "caan_id": caan_id,
         })
@@ -62,26 +62,13 @@ def sync_project_caans(
     if unresolved:
         logger.warning("Skipped %d project_caan records that couldn't be resolved.", unresolved)
 
-    # Fetch existing PG join rows for diff (use project_id + caan_id as keys)
-    pg_records_raw = db.get_all("project_caans", columns=["project_id", "caan_id"])
-    # Enrich PG records with business-key fields for diff comparison
-    # We diff on project_number+caan (string keys) mapped back from IDs
-    project_id_to_num = {v: k for k, v in project_lookup.items()}
-    caan_id_to_code = {v: k for k, v in caan_lookup.items()}
-    pg_records = [
-        {
-            "project_number": project_id_to_num.get(r["project_id"], ""),
-            "caan": caan_id_to_code.get(r["caan_id"], ""),
-            "project_id": r["project_id"],
-            "caan_id": r["caan_id"],
-        }
-        for r in pg_records_raw
-    ]
+    # Fetch existing PG join rows for diff
+    pg_records = db.get_all("project_caans", columns=["project_id", "caan_id"])
 
     to_add, _, to_remove = compute_diff(
         fm_data=resolved,
         pg_data=pg_records,
-        match_keys=["project_number", "caan"],
+        match_keys=["project_id", "caan_id"],
     )
 
     logger.info("ProjectCAANs diff: +%d -%d", len(to_add), len(to_remove))
@@ -109,12 +96,12 @@ def sync_project_caans(
     return result
 
 
-def _build_project_lookup(db: Database) -> dict[str, int]:
-    rows = db.get_all("projects", columns=["id", "number"])
+def _build_project_lookup(db: Database) -> dict[int, int]:
+    rows = db.get_all("projects", columns=["id", "fmp_id_primary"])
     return {
-        str(r["number"]).strip(): r["id"]
+        int(r["fmp_id_primary"]): r["id"]
         for r in rows
-        if r["number"]
+        if r["fmp_id_primary"] is not None
     }
 
 

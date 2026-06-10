@@ -68,14 +68,16 @@ projects:
 project_caans:
   fm_layout: ImportProjectCAANs
   pg_table: project_caans
-  match_key: [project_number, caan]
+  match_key: [project_fmp_id, caan]
   fields:
-    - fm: "Projects::ProjectNumber"
-      pg: project_number          # resolved to project_id at sync time (not persisted directly)
-      transform: strip
+    - fm: ID_Project
+      pg: project_fmp_id          # resolved to project_id via projects.fmp_id_primary (not persisted directly)
+      transform: integer
+      critical: true
     - fm: CAAN
       pg: caan                    # resolved to caan_id at sync time (not persisted directly)
       transform: strip
+      critical: true
 
 contracts:
   fm_layout: ImportContracts
