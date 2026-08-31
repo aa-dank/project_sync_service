@@ -152,9 +152,9 @@ contracts:
       pg: funding_number
       transform: strip
     # --- Duration ---
-    - fm: OriginalTime
+    - fm: OriginalTime_c
       pg: original_project_duration
-      transform: integer          # days
+      transform: integer          # effective original duration in calendar days; calculated in FM
     - fm: ChangeOrdersTimeOfficial
       pg: change_order_time_total
       transform: integer          # Calculated field in FM

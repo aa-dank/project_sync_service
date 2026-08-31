@@ -423,3 +423,38 @@ This session replaced the project-local FileMaker Data API implementation with t
 - Imported `FileMakerAdapter` and SDK-backed exception classes successfully.
 - Compiled `src/project_sync_service`.
 - Ran `project-sync mappings` successfully without credentials.
+
+---
+
+## Entry 008 — FileMaker/PostgreSQL mapping reference
+**Date:** 2026-08-31
+**Author:** Codex
+
+---
+
+### What changed
+
+Added `development/FILEMAKER_POSTGRES_FIELD_MAPPING.md`, a reader-oriented
+reference for the active FileMaker-to-PostgreSQL synchronization mappings.
+It documents source layouts, identities, field conversions, project resolution
+for contracts, and the resolved nature of the `project_caans` join table.
+
+The authoritative mapping definition remains `config/field_mappings.yaml`.
+
+---
+
+## Entry 009 — Effective original contract duration mapping
+**Date:** 2026-08-31
+**Author:** Codex
+
+---
+
+### What changed
+
+Changed the FileMaker source for `contracts.original_project_duration` from
+`OriginalTime` to the calculated `OriginalTime_c` field.
+
+`OriginalTime_c` preserves FileMaker's duration semantics: it uses
+`OriginalTime` for standard contracts and `Phase1Time + Phase2Time` for
+CM-at-Risk contracts. A full contracts sync is required to refresh existing
+PostgreSQL values using the corrected source.
