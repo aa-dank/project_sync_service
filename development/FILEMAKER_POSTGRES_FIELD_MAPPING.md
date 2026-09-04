@@ -50,6 +50,19 @@ required referenced records are available before foreign keys are resolved.
 | `ProjectName` | `name` | strip | |
 | `Drawings` | `drawings` | boolean_yesno | |
 | `Status` | `closed` | boolean_closed | |
+| `CampusClient` | `campus_client` | strip | Required; field must be on `ImportProjects`. |
+| `Notes` | `notes` | strip | Required; blank values become `NULL`. |
+| `ID_Inspector` | `inspector_fmp_id` | integer | Required; FileMaker People ID, not a PostgreSQL FK. |
+| `z_UCExport_Inspector` | `inspector_name` | strip | Required calculated `Last, First` display-name snapshot. |
+| `ID_ProjectManager` | `project_manager_fmp_id` | integer | Required; FileMaker People ID, not a PostgreSQL FK. |
+| `z_UCExport_ProjectManager` | `project_manager_name` | strip | Required calculated `Last, First` display-name snapshot. |
+
+The historical DDR shows that `Notes`, `ID_Inspector`, and
+`ID_ProjectManager` are on `ImportProjects`, but does not list `CampusClient`,
+`z_UCExport_Inspector`, or `z_UCExport_ProjectManager` there. Live preflight
+validation on 2026-09-03 confirmed that the current `ImportProjects` layout
+does return all six fields. The preflight validator treats all six mappings as
+critical and will block the sync if a sample record stops exposing one.
 
 ## Contracts: `ImportContracts` → `contracts`
 

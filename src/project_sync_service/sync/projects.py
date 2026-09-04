@@ -19,12 +19,24 @@ PERSIST_COLUMNS = [
     "name",
     "drawings",
     "closed",
+    "campus_client",
+    "notes",
+    "inspector_fmp_id",
+    "inspector_name",
+    "project_manager_fmp_id",
+    "project_manager_name",
 ]
 
 UPDATE_COLUMNS = [
     "name",
     "drawings",
     "closed",
+    "campus_client",
+    "notes",
+    "inspector_fmp_id",
+    "inspector_name",
+    "project_manager_fmp_id",
+    "project_manager_name",
 ]
 
 
@@ -48,7 +60,7 @@ def sync_projects(
 
     pg_records = db.get_all(
         "projects",
-        columns=["id", "number", "name", "drawings", "closed", "fmp_id_primary"],
+        columns=["id"] + PERSIST_COLUMNS,
     )
 
     to_add, to_update, to_remove = compute_diff(

@@ -458,3 +458,39 @@ Changed the FileMaker source for `contracts.original_project_duration` from
 `OriginalTime` for standard contracts and `Phase1Time + Phase2Time` for
 CM-at-Risk contracts. A full contracts sync is required to refresh existing
 PostgreSQL values using the corrected source.
+
+---
+
+## Entry 010 — Expanded project metadata and personnel sync
+**Date:** 2026-09-03
+**Author:** Codex
+
+---
+
+### What changed
+
+Added the following FileMaker-owned project fields to the active project sync:
+
+- `CampusClient` → `projects.campus_client`
+- `Notes` → `projects.notes`
+- `ID_Inspector` → `projects.inspector_fmp_id`
+- `z_UCExport_Inspector` → `projects.inspector_name`
+- `ID_ProjectManager` → `projects.project_manager_fmp_id`
+- `z_UCExport_ProjectManager` → `projects.project_manager_name`
+
+The PostgreSQL columns are managed externally by the `business_services_db`
+Alembic migration `d2c4e6f8a1b3_add_project_sync_fields.py`. The service does
+not add a People entity or local foreign keys: the two IDs remain FileMaker
+People primary-ID references, while the names are current display snapshots.
+
+### Validation
+
+The historical DDR confirms that `Notes`, `ID_Inspector`, and
+`ID_ProjectManager` are on `ImportProjects`, but does not list `CampusClient`,
+`z_UCExport_Inspector`, or `z_UCExport_ProjectManager` there. Live preflight
+validation on 2026-09-03 confirmed that the current layout exposes all six
+fields and that PostgreSQL is reachable. A projects dry-run was also started
+with the expanded mapping and completed without writes.
+
+All six mappings are marked critical, so a future `project-sync validate` will
+fail rather than permit an incomplete personnel/metadata sync.

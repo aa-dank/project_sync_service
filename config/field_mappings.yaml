@@ -64,6 +64,30 @@ projects:
     - fm: Status
       pg: closed
       transform: boolean_closed   # "Closed" → True, else False
+    - fm: CampusClient
+      pg: campus_client
+      transform: strip
+      critical: true
+    - fm: Notes
+      pg: notes
+      transform: strip
+      critical: true
+    - fm: ID_Inspector
+      pg: inspector_fmp_id
+      transform: integer
+      critical: true
+    - fm: z_UCExport_Inspector
+      pg: inspector_name
+      transform: strip
+      critical: true
+    - fm: ID_ProjectManager
+      pg: project_manager_fmp_id
+      transform: integer
+      critical: true
+    - fm: z_UCExport_ProjectManager
+      pg: project_manager_name
+      transform: strip
+      critical: true
 
 project_caans:
   fm_layout: ImportProjectCAANs
