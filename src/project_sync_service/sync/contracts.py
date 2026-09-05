@@ -4,7 +4,7 @@ Contract sync: syncs contracts table from FileMaker Contracts layout.
 Special logic:
 - _project_fmp_id_lookup is used first to resolve contracts.project_id via projects.fmp_id_primary
 - _project_number_lookup is used as a fallback resolver via projects.number
-- ProjectNumber is NOT persisted in the contracts table
+- ProjectNumber_lk is persisted as contracts.contract_number and also used by the fallback resolver
 - Missing project references → project_id = NULL (with warning)
 """
 from __future__ import annotations

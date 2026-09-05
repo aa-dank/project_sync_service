@@ -113,9 +113,9 @@ contracts:
       pg: fmp_id_primary
       transform: integer
       critical: true
-    - fm: ContractNumber
+    - fm: ProjectNumber_lk
       pg: contract_number
-      transform: integer
+      transform: strip
       critical: true
     # --- Linking (lookup-only; not persisted to contracts table) ---
     - fm: ID_Projects

@@ -494,3 +494,26 @@ with the expanded mapping and completed without writes.
 
 All six mappings are marked critical, so a future `project-sync validate` will
 fail rather than permit an incomplete personnel/metadata sync.
+
+---
+
+## Entry 011 — Contract number source correction
+**Date:** 2026-09-04
+**Author:** Codex
+
+---
+
+### What changed
+
+Changed the source for `contracts.contract_number` from the vestigial
+`Contracts::ContractNumber` field to `Contracts::ProjectNumber_lk`.
+
+`ProjectNumber_lk` is a text field and can contain identifiers with separators,
+so the mapping now uses `strip` rather than `integer`. The field continues to
+serve as the fallback resolver for `contracts.project_id` when `ID_Projects`
+does not resolve.
+
+The required external database migration
+`f7c3a9d2e4b1_change_contract_number_to_string.py` changes
+`contracts.contract_number` to a string column; the canonical SQLAlchemy model
+has been confirmed to match.

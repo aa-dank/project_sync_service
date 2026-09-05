@@ -69,9 +69,9 @@ critical and will block the sync if a sample record stops exposing one.
 | FileMaker field | PostgreSQL column | Conversion | Notes |
 | --- | --- | --- | --- |
 | `ID_Primary` | `fmp_id_primary` | integer | Required; sync identity. |
-| `ContractNumber` | `contract_number` | integer | Required. |
+| `ProjectNumber_lk` | `contract_number` | strip | Required; project number retained as text. `ContractNumber` is not synced. |
 | `ID_Projects` | `project_id` | integer | Required lookup: matched to `projects.fmp_id_primary`, then its PostgreSQL `id` is stored. |
-| `ProjectNumber_lk` | `project_id` | strip | Fallback lookup only: matched to `projects.number` if `ID_Projects` does not resolve. May be ambiguous. |
+| `ProjectNumber_lk` | `project_id` | strip | Also a fallback lookup: matched to `projects.number` if `ID_Projects` does not resolve. May be ambiguous. |
 | `ContractDate` | `contract_date` | date | |
 | `StartDate` | `ntp_start_date` | date | NTP = Notice to Proceed. |
 | `BeneficialOccupancyDate` | `beneficial_occupancy_date` | date | |
@@ -95,9 +95,10 @@ critical and will block the sync if a sample record stops exposing one.
 | `Contracts Architect::Company_c` | `executive_design_org_name` | strip | Related FM field; no related record becomes `NULL`. |
 | `BFDescriptionofWork` | `scope_description` | strip | |
 
-`ID_Projects` and `ProjectNumber_lk` are not stored as contract columns.
-They are temporary resolver values: the result is `contracts.project_id`. If
-neither lookup finds a project, `project_id` is stored as `NULL`.
+`ID_Projects` is a temporary resolver value and is not stored as a contract
+column. `ProjectNumber_lk` is stored as `contracts.contract_number` and also
+used as the fallback resolver for `contracts.project_id`. If neither lookup
+finds a project, `project_id` is stored as `NULL`.
 
 ## Project–CAAN links: `ImportProjectCAANs` → `project_caans`
 

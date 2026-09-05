@@ -236,9 +236,9 @@ contracts:
     - fm: ID_Primary
       pg: fmp_id_primary
       transform: integer
-    - fm: ContractNumber
+    - fm: ProjectNumber_lk
       pg: contract_number
-      transform: integer
+      transform: strip
     # --- Linking (lookup-only; not persisted to contracts table) ---
     - fm: ProjectNumber
       pg: _project_number_lookup
@@ -334,7 +334,7 @@ The `transform` value maps to a Python function:
 CREATE TABLE contracts (
     id                                  SERIAL PRIMARY KEY,
     fmp_id_primary                      INTEGER UNIQUE,                -- FileMaker ID_Primary
-    contract_number                     INTEGER,
+    contract_number                     VARCHAR,
     project_id                          INTEGER REFERENCES projects(id),
     -- Dates
     contract_date                       DATE,
