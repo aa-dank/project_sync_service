@@ -517,3 +517,33 @@ The required external database migration
 `f7c3a9d2e4b1_change_contract_number_to_string.py` changes
 `contracts.contract_number` to a string column; the canonical SQLAlchemy model
 has been confirmed to match.
+
+---
+
+## Entry 012 — Contract executive-design organization mapping correction
+**Date:** 2026-09-25
+**Author:** Codex
+
+---
+
+### What changed
+
+Changed the FileMaker source for `contracts.executive_design_org_name` from
+the unavailable related calculation `Contracts Architect::Company_c` to
+`CompanyNameArchitect`.
+
+`CompanyNameArchitect` is a contract-side text lookup sourced from the same
+architect organization relationship and is exposed on the `ImportContracts`
+layout. The related calculation is not exposed by that layout, so the prior
+mapping was absent from all live API records and left the PostgreSQL column
+empty.
+
+No schema migration is required. Run a contracts sync after deployment to
+backfill the values present in FileMaker.
+
+### Validation
+
+Live read-only checks on 2026-09-25 found that
+`Contracts Architect::Company_c` was absent from a 100-record
+`ImportContracts` sample, while `CompanyNameArchitect` was exposed on all 100
+records. A FileMaker nonempty-value query found 67 matching contracts.

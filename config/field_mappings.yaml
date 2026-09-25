@@ -189,9 +189,9 @@ contracts:
     - fm: CompanyName
       pg: contractor_org_name
       transform: strip
-    - fm: "Contracts Architect::Company_c"
+    - fm: CompanyNameArchitect
       pg: executive_design_org_name
-      transform: strip            # RELATED FIELD via "Contracts Architect" TO; NULL if absent
+      transform: strip            # Contract-side lookup of the architect organization; exposed on ImportContracts
     - fm: BFDescriptionofWork
       pg: scope_description
       transform: strip
