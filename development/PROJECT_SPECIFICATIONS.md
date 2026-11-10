@@ -33,6 +33,13 @@ It replaces the `fmp_caan_project_reconciliation_task` currently embedded in `ar
 
 ## 3. Architecture
 
+### Runtime and dependency baseline
+
+- Python 3.15 or newer; `.python-version` pins CPython 3.15.2 for deployment.
+- uv 0.13.7 or newer; install with `uv sync --locked` to use the committed lockfile.
+- Runtime dependency minimums and the shared FileMaker SDK commit are declared in
+  `pyproject.toml`; `uv.lock` records exact versions of the full dependency graph.
+
 ### Standalone application
 
 ```

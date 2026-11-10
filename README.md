@@ -4,16 +4,26 @@ Standalone Python sync service that pulls project, CAAN, and contract data from 
 
 ## Setup
 
+Use uv 0.13.7 or newer and Python 3.15. The `.python-version` file pins
+Python 3.15.2; `uv sync` downloads it automatically when needed. Update an
+existing uv installation with its installation method (`uv self update` for
+the standalone installer).
+
 ```bash
 # Copy and fill in credentials
 cp .env.example .env
 
-# Install dependencies
-uv sync
+# Install the pinned Python version and locked dependencies
+uv sync --locked
 
 # Validate FM layouts and PG connectivity before first sync
 uv run project-sync validate
 ```
+
+When upgrading an existing deployment, run `uv sync --locked` from the project
+root to rebuild `.venv` with the pinned Python version. Then run
+`uv run project-sync validate` and `uv run project-sync run --dry-run` before
+the next scheduled sync.
 
 ## Usage
 

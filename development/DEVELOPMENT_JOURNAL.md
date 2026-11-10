@@ -547,3 +547,79 @@ Live read-only checks on 2026-09-25 found that
 `Contracts Architect::Company_c` was absent from a 100-record
 `ImportContracts` sample, while `CompanyNameArchitect` was exposed on all 100
 records. A FileMaker nonempty-value query found 67 matching contracts.
+
+---
+
+## Entry 013 — Python and dependency refresh
+**Date:** 2026-11-09
+**Author:** Codex
+
+### What changed
+
+Pinned the deployment interpreter to CPython 3.15.2 (previous local environment:
+3.14.2), raised `requires-python` from 3.11 to 3.15, and required uv 0.13.7 or
+newer so the tooling supports the selected interpreter. Updated dependency
+minimums and regenerated `uv.lock` with the latest stable compatible releases:
+
+| Direct dependency | Previous lock | Updated lock |
+| --- | --- | --- |
+| bs-fmp-sdk | `e4c12a04` | `a74abb2e` |
+| psycopg / psycopg-binary | 3.3.3 | 3.3.8 |
+| click | 8.3.2 | 8.5.1 |
+| rich | 14.3.3 | 15.0.0 |
+| PyYAML | 6.0.3 | 6.0.3 |
+| python-dotenv | 1.2.2 | 1.2.4 |
+| python-dateutil | 2.9.0.post0 | 4.0.0 |
+
+Refreshed transitive dependencies, including requests, urllib3, certifi, and
+tzdata. Set the build backend minimum to Hatchling 1.33.0. Reviewed upstream
+changes for the shared SDK, Psycopg, Click, Rich, and dateutil; no application
+code changes were needed for the interfaces this service uses.
+
+Updated the README and specification with the runtime baseline and locked
+installation workflow. Existing deployments must update uv, run
+`uv sync --locked` to recreate `.venv` on Python 3.15.2, then run preflight and
+a dry-run sync before the next scheduled run.
+
+### Validation
+
+- Installed all 19 locked packages on CPython 3.15.2 and confirmed Psycopg uses
+  its binary implementation. PyYAML built successfully from source.
+- Eight local checks passed using synthetic inputs and mocked connections:
+  module imports, CLI help/version, mapping table rendering, CLI dry-run flags
+  and entity ordering/alias, date and scalar transforms, dotenv/configuration,
+  SDK empty-result/layout-switch/logout behavior, and a CAAN dry-run diff that
+  performs no writes. The scratch script is in ignored `development/local/`.
+- `uv pip check`, source compilation, source distribution/wheel builds, and
+  whitespace checks passed (accepting the specification's existing CRLF line
+  endings). Built archives were checked for environment/cache/scratch files.
+
+### System uv update and live verification
+
+Updated the installed `/root/.local/bin/uv` from 0.9.17 to 0.13.7 with
+`uv self update`. Using system uv, `uv sync --locked` and `uv pip check` passed,
+and `uv run --locked python --version` confirmed Python 3.15.2. All eight local
+compatibility checks also passed under system uv.
+
+Live `uv run --locked project-sync validate` passed: FileMaker and PostgreSQL
+were reachable, all four source layouts and their required fields were
+accessible, and the target tables and checked upsert indexes were present.
+Validation run ID: `0b0a4955-c897-4ff9-a147-0b174df71fa1`.
+
+The full `uv run --locked project-sync run --dry-run` completed in 285.4 seconds
+with zero errors across all entities:
+
+| Entity | Added | Matched for upsert | Removed |
+| --- | --- | --- | --- |
+| caans | 0 | 1,393 | 0 |
+| projects | 2 | 10,063 | 1 |
+| contracts | 0 | 5,718 | 0 |
+| project_caans | 0 | Not counted | 0 |
+
+The upsert counts include all matched records, even those with unchanged data.
+The run skipped 3 projects with blank or digitless numbers, used project-number
+fallbacks for 4 contracts, reported 4 unresolved contract-to-project references,
+and skipped 150 unresolved project-CAAN links. These warnings describe the
+current data and lookup results; no database records were changed and no
+production write sync was run.
+Dry-run ID: `38e3ce1e-510a-45ae-b079-ec2f5e53a141`.

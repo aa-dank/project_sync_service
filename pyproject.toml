@@ -3,22 +3,22 @@ name = "project-sync-service"
 version = "0.1.5"
 description = "Sync service for pulling project data from FileMaker (UCPPC) into PostgreSQL (business_services_db)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.15"
 dependencies = [
-    "bs-fmp-sdk @ git+https://github.com/aa-dank/bs_fmp_sdk.git@e4c12a04f3d944ea365733f998625c5a9f4b20c9",
-    "psycopg[binary]>=3.1",
-    "click>=8.1",
-    "rich>=13.0",
-    "pyyaml>=6.0",
-    "python-dotenv>=1.0",
-    "python-dateutil>=2.8",
+    "bs-fmp-sdk @ git+https://github.com/aa-dank/bs_fmp_sdk.git@a74abb2e9de5f4b4596967d0cffef266850db694",
+    "psycopg[binary]>=3.3.8",
+    "click>=8.5.1",
+    "rich>=15.0.0",
+    "pyyaml>=6.0.3",
+    "python-dotenv>=1.2.4",
+    "python-dateutil>=4.0.0",
 ]
 
 [project.scripts]
 project-sync = "project_sync_service.cli:cli"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.33.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
@@ -26,3 +26,6 @@ packages = ["src/project_sync_service"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.uv]
+required-version = ">=0.13.7"
